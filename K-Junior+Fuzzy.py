@@ -87,16 +87,16 @@ for i in range(5):
     # Fuzz.trimf faz uma função de pertinencia triangulas onde [x,y,z] são os pontos do triangulo
     
 # Sensor da frente
-sensor_frente['perto'] = fuzz.trimf(sensor_frente.universe, [0, 0, 0.065])
-sensor_frente['longe'] = fuzz.trimf(sensor_frente.universe,[0.065,0.065,0.12])
+sensor_frente['perto'] = fuzz.trimf(sensor_frente.universe, [0, 0, 0.07])
+sensor_frente['longe'] = fuzz.trimf(sensor_frente.universe,[0.07,0.08,0.12])
                              
 # Sensor do lado esquerdo
-sensores_left['perto'] = fuzz.trimf(sensores_left.universe, [0, 0, 0.065])
-sensores_left['longe'] = fuzz.trimf(sensores_left.universe,[0.065,0.065,0.12])
+sensores_left['perto'] = fuzz.trimf(sensores_left.universe, [0, 0, 0.07])
+sensores_left['longe'] = fuzz.trimf(sensores_left.universe,[0.070,0.08,0.12])
 
 # Sensores do lado direito
-sensores_right['perto'] = fuzz.trimf(sensores_right.universe, [0, 0, 0.065])
-sensores_right['longe'] = fuzz.trimf(sensores_right.universe,[0.065,0.065,0.12])
+sensores_right['perto'] = fuzz.trimf(sensores_right.universe, [0, 0, 0.07])
+sensores_right['longe'] = fuzz.trimf(sensores_right.universe,[0.07,0.08,0.12])
 
 # Velocidade Motor esquerdo 
 v_left['parado'] = fuzz.trimf(v_left.universe, [0, 0, 0.1])
@@ -113,10 +113,12 @@ v_right['rapido'] = fuzz.trimf(v_right.universe,  [5, 10, 10])
 rule1 = ctrl.Rule(sensor_frente['perto'] and sensores_left['perto'] and sensores_right['perto'], v_left['parado'] )
 rule2 = ctrl.Rule(sensor_frente['longe'] and sensores_left['longe'] and sensores_right['longe'], v_left['rapido'] )
 rule3 = ctrl.Rule(sensor_frente['perto'] and sensores_left['perto'] and sensores_right['longe'], v_left['rapido'] )
+rule7 = ctrl.Rule(sensor_frente['perto'] and sensores_left['longe'] and sensores_right['perto'], v_left['rapido'] )
 
 rule4 = ctrl.Rule(sensor_frente['perto'] and sensores_left['perto'] and sensores_right['perto'] , v_right['rapido'] )
 rule5 = ctrl.Rule(sensor_frente['longe'] and sensores_left['longe'] and sensores_right['longe'], v_right['rapido'] )
 rule6 = ctrl.Rule(sensor_frente['perto'] & sensores_left['perto'] & sensores_right['longe'], v_right['parado'] )
+rule8 = ctrl.Rule(sensor_frente['perto'] and sensores_left['longe'] and sensores_right['perto'], v_left['parado'] )
 # tem um bug muito estranho na regra 6 que se colocar dois and dá erro, por isso o &
 
 
@@ -145,7 +147,11 @@ while vrep.simxGetConnectionId(clientID != -1): #Enquanto houver conexão com o 
     for i in range(5):
         error_code, estado, coord, detectedObjectHandle, detectedSurfaceNormalVector = vrep.simxReadProximitySensor(clientID,sensores_handle[i], vrep.simx_opmode_buffer)
         # Não sei pra que serve o estado, nem os dois últimos parametros retornados
-        valores_sensores[i] = coord[2] # pega apenas cordenada Z que é a que importe de verdade
+        # Era o estado que tava dando problema, foi só colocar ele que o robo roda de boa
+        if estado > 0:
+            valores_sensores[i] = coord[2] # pega apenas cordenada Z que é a que importe de verdade
+        else:
+            valores_sensores[i] = 0.8
         
         ### Sistema de controle fuzzy
         fuzzy_ctrl = ctrl.ControlSystem([rule1, rule2, rule3,rule4,rule5,rule6]) #sistema de controle
